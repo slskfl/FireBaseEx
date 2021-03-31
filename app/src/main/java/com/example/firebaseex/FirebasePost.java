@@ -6,10 +6,10 @@ import java.util.logging.Handler;
 
 public class FirebasePost {
 
-    String id;
-    String name;
-    String email;
-    String tel;
+    public String id;
+    public String name;
+    public String email;
+    public String tel;
 
     public FirebasePost() {
     }

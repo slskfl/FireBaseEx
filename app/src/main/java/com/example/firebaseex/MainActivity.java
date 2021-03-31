@@ -19,6 +19,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -32,8 +33,8 @@ import java.util.Map;
  4. manigest, bupild 코드 추사
  */
 public class MainActivity extends AppCompatActivity {
-    EditText edtId, edtName, edtEmail, edtTel;
-    Button btnSelect, btnInsert, btnUpdate, btnDelete;
+   /* EditText edtId, edtName, edtEmail, edtTel;
+    Button btnInsert, btnUpdate;
     ListView dbListView;
     DatabaseReference reference;
     String userId, name, email, tel;
@@ -49,14 +50,14 @@ public class MainActivity extends AppCompatActivity {
         edtName=findViewById(R.id.edtName);
         edtEmail=findViewById(R.id.edtEmail);
         edtTel=findViewById(R.id.edtTel);
-        btnSelect=findViewById(R.id.btnSelect);
         btnInsert=findViewById(R.id.btnInsert);
         btnUpdate=findViewById(R.id.btnUpdate);
-        btnDelete=findViewById(R.id.btnDelete);
         dbListView =findViewById(R.id.DBlistView);
 
-        adapter=new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, arrayData);
+        adapter=new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
         dbListView.setAdapter(adapter);
+        getFireDataBase();
+
         dbListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -71,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         dbListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                String tempData[]=arrayData.get(position).split(" ");
+                String tempData[]=arrayData.get(position).split("\\s");//공백 처리
                 userId=tempData[0];
                 AlertDialog.Builder builder=new AlertDialog.Builder(MainActivity.this);
                 builder.setTitle("데이터 삭제");
@@ -128,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                 edtName.setText("");
                 edtEmail.setText("");
                 edtTel.setText("");
+                showToast("자료가 수정되었습니다.");
             }
 
         });
@@ -179,8 +181,168 @@ public class MainActivity extends AppCompatActivity {
                 showToast("데이터베이스 로드 실패");
             }
         };
+        Query data=FirebaseDatabase.getInstance().getReference().
+                child("id_list").orderByChild("id");
+        data.addListenerForSingleValueEvent(eventListener);
     }
     void showToast(String msg){
         Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+    }
+}*/
+   EditText edtID, edtName, edtEmail, edtTel;
+    Button btnInsert, btnUpdate;
+    ListView dBListView;
+    DatabaseReference reference;
+    String ID, name, email, tel;
+    ArrayAdapter<String> adapter;
+    static ArrayList<String> arrayIndex=new ArrayList<String>();
+    static ArrayList<String> arrayData=new ArrayList<String>();
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        edtID=findViewById(R.id.edtId);
+        edtName=findViewById(R.id.edtName);
+        edtEmail=findViewById(R.id.edtEmail);
+        edtTel=findViewById(R.id.edtTel);
+        btnInsert=findViewById(R.id.btnInsert);
+        btnUpdate=findViewById(R.id.btnUpdate);
+        dBListView=findViewById(R.id.DBlistView);
+        adapter=new ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_1);
+        dBListView.setAdapter(adapter);
+        getFirebaseDataBase();
+
+        btnInsert.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ID=edtID.getText().toString();
+                name=edtName.getText().toString();
+                email=edtEmail.getText().toString();
+                tel=edtTel.getText().toString();
+                if(!isExistID()){
+                    postFirebaseDataBase(true);
+                    getFirebaseDataBase();
+                    edtID.setText("");
+                    edtName.setText("");
+                    edtEmail.setText("");
+                    edtTel.setText("");
+                    showToast("데이터가 저장되었습니다.");
+                }else {
+                    showToast("이미 존재하는 ID입니다. 다른 ID로 설정해주세요");
+                    edtID.requestFocus();
+                }
+
+            }
+        });
+
+        btnUpdate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ID=edtID.getText().toString();
+                name=edtName.getText().toString();
+                email=edtEmail.getText().toString();
+                tel=edtTel.getText().toString();
+                postFirebaseDataBase(true);
+                getFirebaseDataBase();
+                edtID.setText("");
+                edtName.setText("");
+                edtEmail.setText("");
+                edtTel.setText("");
+                showToast("자료가 수정되었습니다.");
+            }
+        });
+
+        dBListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String tempData[]=arrayData.get(position).split("\\s+");
+                edtID.setText(tempData[0]);
+                edtName.setText(tempData[1]);
+                edtEmail.setText(tempData[2]);
+                edtTel.setText(tempData[3]);
+            }
+        });
+
+        dBListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                String tempData[]=arrayData.get(position).split("\\s+");
+                ID=tempData[0];
+                AlertDialog.Builder builder=new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("데이터삭제");
+                builder.setMessage(ID+" 데이터를 삭제할까요?");
+                builder.setPositiveButton("예", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        postFirebaseDataBase(false);
+                        getFirebaseDataBase();
+                        showToast("데이터를 삭제했습니다.");
+                    }
+                });
+                builder.setNegativeButton("아니오", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        showToast("삭제를 취소했습니다.");
+                    }
+                });
+                builder.create();
+                builder.show();
+                return false;
+            }
+        });
+    }//onCreate메서드 끝~~
+
+    //아이디 중복체크
+    public boolean isExistID(){
+        boolean isExist=arrayIndex.contains(ID);
+        return isExist;
+    }
+    //데이터 저장,수정 메서드
+    public void postFirebaseDataBase(boolean add){
+        reference= FirebaseDatabase.getInstance().getReference();
+        Map<String, Object> childUpdates=new HashMap<>();
+        Map<String, Object> postValues=null;
+        if(add) {
+            FirebasePost post=new FirebasePost(ID, name, email, tel);
+            postValues=post.toMap();
+        }
+        childUpdates.put("/id_list/"+ID,postValues);
+        reference.updateChildren(childUpdates);
+    }
+    //데이터 조회 메서드
+    public void getFirebaseDataBase() {
+        ValueEventListener eventListener=new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                arrayData.clear();
+                arrayIndex.clear();
+                for(DataSnapshot dataSnapshot:snapshot.getChildren()){
+                    String key=dataSnapshot.getKey();
+                    FirebasePost get=dataSnapshot.getValue(FirebasePost.class);
+                    String info[]={get.id, get.name, get.email, get.tel};
+                    String result=info[0]+" "+info[1]+" "+info[2]+" "+ info[3];
+                    arrayData.add(result);
+                    arrayIndex.add(key);
+                }
+                adapter.clear();
+                adapter.addAll(arrayData);
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                showToast("데이터베이스 로드 실패!!");
+            }
+        };
+        Query data=FirebaseDatabase.getInstance().getReference().
+                child("id_list").orderByChild("id");
+        data.addListenerForSingleValueEvent(eventListener);
+    }
+
+    //토스트 메서드
+    void showToast(String msg) {
+        Toast.makeText(getApplicationContext(),msg,Toast.LENGTH_SHORT).show();
     }
 }
